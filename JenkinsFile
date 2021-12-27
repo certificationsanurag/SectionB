@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    tools {
+        
+        maven "MAVEN"
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                git 'https://github.com/jglick/simple-maven-project-with-tests.git'
+                sh "mvn -Dmaven.test.failure.ignore=true clean package"
+
+            }
+
+            post {
+                success {
+                    junit '**/target/surefire-reports/TEST-*.xml'
+                    archiveArtifacts 'target/*.jar'
+                }
+            }
+        }
+        stage('upload Jar to Nexus'){
+            steps{
+                nexusArtifactUploader{
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: '3.145.116.83:10680',
+                    groupId: 'test',
+                    version: '1.0',
+                    repository: 'http://3.145.116.83:10680/repository/maven_snapshot_jar/',
+                    credentialsId: '88eea3fb-a208-4b0a-9fd7-59df1244c1e7',
+                    artifacts: [
+                        [artifactId: 'simple-maven-project-with-tests',
+                         classifier: '',
+                         file: 'simple-maven-project-with-tests-1.0-SNAPSHOT.jar',
+                         type: 'jar']
+                    ]
+                }
+                    
+                }
+            }
+        }
+    }
